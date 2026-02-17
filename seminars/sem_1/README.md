@@ -2,7 +2,11 @@
 
 ## Pandas
 
-Основной материал по pandas находится в блокноте: `pandas_intro_nb.ipynb`.
+Основной материал по pandas находится в блокноте: [`./pandas_intro_nb.ipynb`](./pandas_intro_nb.ipynb).
+
+## PySpark
+
+Основной материал по pandas находится в блокноте: [`./pyspark_intro_nb_2.ipynb`](./pyspark_intro_nb_2.ipynb).
 
 ## Подготовка среды для работы
 
