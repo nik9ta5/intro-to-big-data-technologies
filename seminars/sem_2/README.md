@@ -214,7 +214,6 @@ minio server /data --console-address :9001
 
 ## Подключение PySpark к MinIO
 
----
 **Для Windows**
 (Для другой ОС - перейти к [Настройка конфигурации SparkSession в PySpark](#настройка-конфигурации-sparksession-в-pyspark))
 
@@ -225,7 +224,6 @@ minio server /data --console-address :9001
 Изменение системных переменных - Переменные среды - Системные переменные - Создать (`HADOOP_HOME`, указать путь `C:\hadoop`).
 Добавить в Path - изменить - `%HADOOP_HOME%\bin` - Ок - Ок - Ок.
 
----
 
 ### Настройка конфигурации SparkSession в PySpark
 
