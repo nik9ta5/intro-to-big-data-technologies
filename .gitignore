@@ -1,2 +1,6 @@
 __pycache__/
 data/
+.env
+__init__.py
+spark_local_cache/
+data_files/
