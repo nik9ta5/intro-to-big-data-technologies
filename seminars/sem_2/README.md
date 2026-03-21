@@ -1,4 +1,4 @@
-# Семинар 2. Введение в Docker и MinIO
+# Семинар 2. Введение в Docker. MinIO
 
 Содержание:
 * [Docker](#docker)

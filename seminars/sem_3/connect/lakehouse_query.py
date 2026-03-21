@@ -2,6 +2,7 @@ from pyspark.sql import functions as F
 
 from tools import argument_parsing
 from spark_session import spark_session_create
+from pack1.simpel import fucn1
 
 
 if __name__ == "__main__":
@@ -17,7 +18,12 @@ if __name__ == "__main__":
     print('connection successful')
 
     
-    result_query = spark.sql(f"SELECT * FROM local_catalog.{db_name}.{table_name}").show(10, vertical=True)
+    result_query = spark.sql(f"""
+        SELECT request_date, COUNT(*) FROM local_catalog.{db_name}.{table_name}
+        GROUP BY(request_date)
+        ORDER BY (request_date)
+    """).show(90)
+    
     print(result_query)
 
 
