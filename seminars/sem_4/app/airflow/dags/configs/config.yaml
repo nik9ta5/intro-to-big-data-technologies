@@ -1,0 +1,17 @@
+project_name: "minio_etl"
+minio:
+  bucket_raw: "raw-data"
+  bucket_processed: "gold-data"
+spark_params:
+  executor_memory: "2g"
+  parallelism: 4
+spark_connect:
+  root_user: adm
+  root_password: secret_pass
+  buck_name: lake
+  db_name: db1
+  table_name: table_one
+  srotage_url: http://minio:9000
+  spark_cache_dir: ./spark_local_cache
+
+path2raw_data: s3a://raw-data/raw3-data/*.parquet

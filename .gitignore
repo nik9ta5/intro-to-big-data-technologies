@@ -4,3 +4,4 @@ data/
 __init__.py
 spark_local_cache/
 data_files/
+logs/
