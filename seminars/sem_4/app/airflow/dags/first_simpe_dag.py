@@ -67,6 +67,7 @@ def read_connection_variables_pipeline():
     result_task2 = get_connection_variables()
     resutl_task3 = create_conn_minio()
 
+    # simple_print >> get_connection_variables >> create_conn_minio
     result_task1 >> result_task2 >> resutl_task3
 
 

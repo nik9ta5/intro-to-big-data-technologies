@@ -78,8 +78,8 @@ if __name__ == "__main__":
         .tableProperty("write.format.default", "parquet")
         .tableProperty("write.target-file-size-bytes", "134217728") # 128 MB
         .partitionedBy(F.col("request_date"))
-        .overwritePartitions()
-        # .createOrReplace()
+        # .overwritePartitions()
+        .createOrReplace()
     )
 
     print("done")
