@@ -1,11 +1,11 @@
 services:
-  # База данных для метаданных Airflow
+  # Сервис с базой данных, для метаданных Airflow
   postgres:
-    image: psql_img:16
-    # build: ./postgres # Если собирать с Dockerfile
+    # image: psql_img:16 # Используем существующий образ
+    build: ./postgres # Или собираем с Dockerfile (указываем относительный путь)
     container_name: postgres_container
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER} # Возьмет из файла `.env` (`.env` должен находиться в директории с `docker-compose.yml`)
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     healthcheck:
@@ -14,34 +14,34 @@ services:
       timeout: 5s
       retries: 5
 
-  # Инициализация базы данных (выполнится один раз)
   airflow-init:
-      # image: airflow:low
-      build: ./airflow # Если собирать с Dockerfile
-      depends_on:
-        postgres:
-          condition: service_healthy
-      environment:
-        # postgresql+psycopg2://<USER>:<PASSWORD>@<SERVICE_NAME>/<DB_NAME>
-        AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
-        AIRFLOW__CORE__LOAD_EXAMPLES: true
-        AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
-      # Эта команда создаст таблицы и создаст пользователя admin/admin
-      command: >
-        bash -c "airflow db init &&
-        airflow users create 
-        --username \"${AIRFLOW_USER}\" 
-        --firstname \"${AIRFLOW_USER_FIRSTNAME}\"  
-        --lastname \"${AIRFLOW_USER_LASTNAME}\" 
-        --role Admin 
-        --email admin@example.com 
-        --password \"${AIRFLOW_PASSWORD}\"
-        "
-
-  # Веб-интерфейс Airflow
-  airflow-webserver:
+    # Сервис для инициализации (создает БД и пользователя)
     # image: airflow:low
     build: ./airflow # Если собирать с Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # postgresql+psycopg2://<USER>:<PASSWORD>@<SERVICE_NAME>/<DB_NAME>
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
+      AIRFLOW__CORE__LOAD_EXAMPLES: true
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+    # Эта команда создаст таблицы и создаст пользователя admin/admin
+    command: >
+      bash -c "airflow db init &&
+      airflow users create 
+      --username \"${AIRFLOW_USER}\" 
+      --firstname \"${AIRFLOW_USER_FIRSTNAME}\"  
+      --lastname \"${AIRFLOW_USER_LASTNAME}\" 
+      --role Admin 
+      --email admin@example.com 
+      --password \"${AIRFLOW_PASSWORD}\"
+      "
+
+  airflow-webserver:
+    # Сервис с веб-интерфейсом Airflow
+    # image: airflow:low
+    build: ./airflow
     container_name: airflow_web
     restart: always
     depends_on:
@@ -62,13 +62,14 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/spark_local_cache:/opt/airflow/spark_local_cache
+      - ./airflow/spark_local_temp:/opt/airflow/spark_local_cache
+      - ./airflow/spark_local_cache:/home/airflow/.ivy2
     command: webserver
 
-  # Планировщик (без него DAG-и не будут запускаться сами)
   airflow-scheduler:
+    # Сервис с планировщиком (именно он отвечает за запуск DAG-ов)
     # image: airflow:low
-    build: ./airflow # Если собирать с Dockerfile
+    build: ./airflow
     container_name: airflow_scheduler
     restart: always
     depends_on:
@@ -82,13 +83,14 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/spark_local_cache:/opt/airflow/spark_local_cache
+      - ./airflow/spark_local_temp:/opt/airflow/spark_local_cache
+      - ./airflow/spark_local_cache:/home/airflow/.ivy2
     command: scheduler
 
-  # MinIO
   minio:
-    image: storage:latest
-    # build: ./storage_lakehouse # Если собирать с Dockerfile
+    # Сервис с хранилищем MinIO
+    # image: storage:latest
+    build: ./storage_lakehouse
     container_name: minio_container
     ports:
       - "9050:9000"
