@@ -3,5 +3,7 @@ data/
 .env
 __init__.py
 spark_local_cache/
+spark_local_temp/
 data_files/
 logs/
+storage_data/

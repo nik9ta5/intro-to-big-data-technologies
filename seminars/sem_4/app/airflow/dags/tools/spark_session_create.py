@@ -5,8 +5,13 @@ def spark_session_create(
         root_password: str, 
         bucket_name: str, 
         srotage_url: str,
-        dir_for_spark_cache: str = "./spark_local_cache"
+        driver_memory: str = "1g",
+        executor_memory: str = "2g",
+        shuffle_partitions: str = 10,
+        spark_temp_folder: str = "/opt/airflow/spark_local_temp",
+        spark_cache_folder: str = "/home/airflow/.ivy2"
     ):
+    # Вынести PACKAGES в файл конфигурации
     PACKAGES = ",".join([
         "org.apache.hadoop:hadoop-aws:3.3.4",
         "com.amazonaws:aws-java-sdk-bundle:1.12.262",
@@ -19,12 +24,15 @@ def spark_session_create(
         SparkSession.builder 
         .appName("MinIO test")
 
-        .config("spark.driver.memory", "1g")
-        .config("spark.executor.memory", "2g")
-        .config("spark.sql.shuffle.partitions", "10")
+        .config("spark.driver.memory", driver_memory)
+        .config("spark.executor.memory", executor_memory)
+        .config("spark.sql.shuffle.partitions", shuffle_partitions)
         
         # === директория для временных данных spark ===
-        .config("spark.local.dir", dir_for_spark_cache)
+        .config("spark.local.dir", spark_temp_folder)
+
+        # === директория для кэша ===
+        .config("spark.jars.ivy", spark_cache_folder)
 
         # === зависимости ===
         .config("spark.jars.packages", PACKAGES)
