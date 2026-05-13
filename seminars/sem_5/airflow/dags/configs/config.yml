@@ -1,0 +1,27 @@
+project_name: "elt_pipeline"
+
+# Для подключения к MinIO
+minio:
+  root_user: adm
+  root_password: secret_pass
+  raw_data_bucket: raw-docs
+  lakehouse_bucket: lakehouse
+  processed_bucket: processed-data
+  srotage_url: http://minio:9000
+
+
+# Для работы PySpark
+spark_params:
+  driver_memory: "1g"
+  executor_memory: "2g"
+  shuffle_partitions: 10
+  parallelism: 4
+  spark_temp_folder: /opt/airflow/spark_local_temp
+  spark_cache_folder: /home/airflow/.ivy2
+
+spark_connect:
+  db_name: text_db
+  table_name: chunks_table
+
+# Другие # s3a://raw-data/
+raw_data_first_part: raw-docs/docs-part1/*.pdf

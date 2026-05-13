@@ -1,0 +1,119 @@
+services:
+  # Сервис с базой данных, для метаданных Airflow
+  postgres:
+    image: app5-postgres:latest # Используем существующий образ
+    # build: ./postgres # Или собираем с Dockerfile (указываем относительный путь)
+    container_name: postgres_container
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER} # Возьмет из файла `.env` (`.env` должен находиться в директории с `docker-compose.yml`)
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  airflow-init:
+    # Сервис для инициализации (создает БД и пользователя)
+    image: app5-airflow-init:latest
+    # build: ./airflow # Если собирать с Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # postgresql+psycopg2://<USER>:<PASSWORD>@<SERVICE_NAME>/<DB_NAME>
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
+      AIRFLOW__CORE__LOAD_EXAMPLES: true
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+    # Эта команда создаст таблицы и создаст пользователя admin/admin
+    command: >
+      bash -c "airflow db init &&
+      airflow users create 
+      --username \"${AIRFLOW_USER}\" 
+      --firstname \"${AIRFLOW_USER_FIRSTNAME}\"  
+      --lastname \"${AIRFLOW_USER_LASTNAME}\" 
+      --role Admin 
+      --email admin@example.com 
+      --password \"${AIRFLOW_PASSWORD}\"
+      "
+
+  airflow-webserver:
+    # Сервис с веб-интерфейсом Airflow
+    image: app5-airflow-webserver:latest
+    # build: ./airflow
+    container_name: airflow_web
+    restart: always
+    depends_on:
+      - postgres
+      - airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      # postgresql+psycopg2://<USER>:<PASSWORD>@<SERVICE_NAME>/<DB_NAME>
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
+      AIRFLOW__CORE__LOAD_EXAMPLES: true
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/spark_local_temp:/opt/airflow/spark_local_cache
+      - ./airflow/spark_local_cache:/home/airflow/.ivy2
+    command: webserver
+
+  airflow-scheduler:
+    # Сервис с планировщиком (именно он отвечает за запуск DAG-ов)
+    image: app5-airflow-scheduler:latest
+    # build: ./airflow
+    container_name: airflow_scheduler
+    restart: always
+    depends_on:
+      - postgres
+      - airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
+      AIRFLOW__CORE__LOAD_EXAMPLES: true
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/spark_local_temp:/opt/airflow/spark_local_cache
+      - ./airflow/spark_local_cache:/home/airflow/.ivy2
+    command: scheduler
+
+  minio:
+    # Сервис с хранилищем MinIO
+    image: app5-minio:latest
+    # build: ./storage_lakehouse
+    container_name: minio_container
+    ports:
+      - "9050:9000"
+      - "9051:9001"
+    environment:  
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BROWSER: ${MINIO_BROWSER}
+      MINIO_IDENTITY_OPENID_ENABLE: ${MINIO_IDENTITY_OPENID_ENABLE}
+      MINIO_CALLHOME_ENABLE: ${MINIO_CALLHOME_ENABLE}
+    volumes:
+      - ./storage_lakehouse/storage_data:/data
+    command: server /data --console-address ":9001"
+
+  vector_store_service:
+    image: qdrant/qdrant:latest
+    container_name: vectore_store_services
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./vector_store/qdrant_storage:/qdrant/storage
+      - ./vector_store/qdrant_snapshots:/qdrant/snapshots
+    environment:
+      - QDRANT__SERVICE__API_KEY=${QDRANT_SERVICE_API_KEY}
